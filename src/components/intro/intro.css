@@ -1,0 +1,147 @@
+/* ------------------------------------------------------------------
+   Vihaan Fleet intro overlay (black & gold)
+   All colours are CSS variables from utils/colors.js (theme/applyTheme.js).
+   ------------------------------------------------------------------ */
+
+.vf-intro {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  overflow: hidden;
+  contain: strict;
+  transition: opacity var(--vf-exit-ms, 320ms) ease;
+}
+.vf-intro[data-stage='exit'] {
+  opacity: 0;
+}
+
+/* Backdrop: the hero's black with a warm gold pool of light. */
+.vf-intro__backdrop,
+.vf-intro__scene {
+  position: absolute;
+  inset: 0;
+  transition: opacity 420ms ease;
+}
+.vf-intro__backdrop {
+  background:
+    radial-gradient(ellipse 60% 45% at 50% 58%, var(--gold-a16), transparent 70%),
+    var(--bg);
+}
+.vf-intro[data-stage='fade'] .vf-intro__backdrop,
+.vf-intro[data-stage='fade'] .vf-intro__scene,
+.vf-intro[data-stage='fade'] .vf-intro__road {
+  opacity: 0;
+}
+
+/* Gold road line under the wheels (like the hero's). */
+.vf-intro__road {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 62%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--gold-a70), transparent);
+  transition: opacity 500ms ease;
+}
+.vf-intro:not([data-stage='loading']):not([data-stage='drive']) .vf-intro__road {
+  opacity: 0;
+}
+
+/* ---------------- the lock-up: V first, then "Vihaan Fleet" ---------------- */
+.vf-intro__logo {
+  position: fixed;
+  left: 0;
+  top: 0;
+  transform-origin: 0 0;
+  transform: translate(var(--vf-x, 0px), var(--vf-y, 0px)) scale(var(--vf-s, 1));
+  pointer-events: none;
+}
+
+.vf-intro__logo .brand-mark,
+.vf-intro__logo .brand-word {
+  opacity: 0;
+}
+
+/* mark: the solid V takes over from the particles */
+.vf-intro:is([data-stage='mark'], [data-stage='word'], [data-stage='move'], [data-stage='fade']) .vf-intro__logo .brand-mark {
+  opacity: 1;
+  animation: vfMarkIn 320ms ease-out both;
+}
+.vf-intro[data-stage='mark'] .vf-intro__logo .brand-mark,
+.vf-intro[data-stage='word'] .vf-intro__logo .brand-mark {
+  filter: drop-shadow(0 0 10px var(--gold-a55));
+}
+.vf-intro__logo .brand-mark {
+  transition: filter 600ms ease;
+}
+
+/* word: "Vihaan Fleet" writes on left to right */
+.vf-intro:is([data-stage='word'], [data-stage='move'], [data-stage='fade']) .vf-intro__logo .brand-word {
+  opacity: 1;
+  animation: vfWordIn var(--vf-word-ms, 600ms) cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.vf-intro__logo[data-word='fade'] .brand-word {
+  opacity: 0 !important;
+  transition: opacity 300ms ease;
+}
+
+@keyframes vfMarkIn {
+  from {
+    opacity: 0;
+    transform: scale(1.06);
+  }
+}
+@keyframes vfWordIn {
+  from {
+    opacity: 0;
+    clip-path: inset(0 100% 0 0);
+    transform: translateX(-8px);
+  }
+  to {
+    opacity: 1;
+    clip-path: inset(0 -4% 0 0);
+    transform: none;
+  }
+}
+
+/* ---------------- skip ---------------- */
+.vf-intro__skip {
+  position: absolute;
+  right: max(16px, env(safe-area-inset-right));
+  bottom: max(20px, env(safe-area-inset-bottom));
+  padding: 9px 18px;
+  border-radius: 999px;
+  font: 600 13px/1 var(--body);
+  letter-spacing: 0.04em;
+  color: var(--ink);
+  background: var(--glass);
+  border: 1px solid var(--line);
+  backdrop-filter: blur(8px);
+  cursor: pointer;
+  transition:
+    border-color 150ms ease,
+    color 150ms ease;
+  animation: vfFadeIn 400ms 250ms ease both;
+}
+.vf-intro__skip:hover {
+  border-color: var(--gold-2);
+  color: var(--gold-1);
+}
+.vf-intro__skip:focus-visible {
+  outline: 2px solid var(--gold-1);
+  outline-offset: 3px;
+}
+@keyframes vfFadeIn {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vf-intro *,
+  .vf-intro__logo {
+    transition: none !important;
+    animation: none !important;
+  }
+}
