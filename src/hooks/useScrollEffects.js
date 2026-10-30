@@ -2,7 +2,8 @@ import { useEffect } from 'react';
 import { pointOnRoute, readHowRoute, reachedStep } from '../three/howRoute';
 
 // .phones is revealed as a whole: the phones themselves use `translate` for parallax.
-const REVEAL_SELECTOR = '.panel-body > *:not(.cards):not(.app-copy), .card, .steps li, .stats div, .price-card, .app-copy > *';
+// The pricing stats are left out: they stick under the scooter and rise into place on their own.
+const REVEAL_SELECTOR = '.panel-body > *:not(.cards):not(.app-copy), .card, .steps li, .price-card, .app-copy > *';
 const reduced = () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 const clamp01 = (v) => (v < 0 ? 0 : v > 1 ? 1 : v);
 

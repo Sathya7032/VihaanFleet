@@ -1,6 +1,7 @@
+import { DAILY_RENT } from './sections/PricingSection';
+
 /**
- * Hero: two-line headline, CTAs, ₹299 price pill, gold road line and speed
- * streaks. `live` starts the entrance (after the intro hands over) - it is
+ * Hero: two-line headline, CTAs, ₹299 price pills on both sides, gold road line and speed streaks. `live` starts the entrance (after the intro hands over) - it is
  * timed with the 3D scooter's ride-in on the background stage.
  */
 export default function HeroSection({ live }) {
@@ -39,9 +40,15 @@ export default function HeroSection({ live }) {
         </div>
       </div>
 
-      <div className="price-pill" aria-label="Daily rent ₹299">
+      <div className="price-pill price-pill-left" aria-label={`Daily rent ₹${DAILY_RENT}`}>
         <span className="price-pill-label">Daily rent</span>
-        <strong>₹299</strong>
+        <strong>₹{DAILY_RENT}</strong>
+        <small>/day</small>
+      </div>
+
+      <div className="price-pill" aria-label={`Daily rent ₹${DAILY_RENT}`}>
+        <span className="price-pill-label">Daily rent</span>
+        <strong>₹{DAILY_RENT}</strong>
         <small>/day</small>
       </div>
 

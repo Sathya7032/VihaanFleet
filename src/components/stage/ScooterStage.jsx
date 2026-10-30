@@ -2,9 +2,8 @@ import { useEffect, useRef } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { loadVespaScene } from '../../three/vespaModel';
 import { ScooterStudio, StageMotion } from '../../three/stageEngine';
-import { HEADING, HOW_SIZE, POSES, RIDE_IN_FROM_NX, RIDE_IN_HIT_AT, RIDE_IN_SECONDS, poseForScroll } from '../../three/stagePoses';
-import { pointOnRoute, readHowRoute } from '../../three/howRoute';
-import { readLogoPass } from '../../three/logoPass';
+import { HEADING, HOW_SIZE, RIDE_IN_FROM_NX, RIDE_IN_HIT_AT, RIDE_IN_SECONDS, poseForScroll, posesFor } from '../../three/stagePoses';
+import { groundAt, pointOnRoute, readHowRoute } from '../../three/howRoute';
 
 const power4Out = (t) => 1 - Math.pow(1 - t, 5);
 
@@ -21,7 +20,7 @@ function StageRig({ rideIn, isMobile, reduced, onError }) {
   useEffect(() => {
     const studio = new ScooterStudio({ gl, scene, camera });
     const motion = new StageMotion(studio);
-    const poses = isMobile ? POSES.mobile : POSES.desktop;
+    const poses = posesFor(window.innerWidth, window.innerHeight);
     const state = {
       studio,
       motion,
@@ -88,9 +87,10 @@ function StageRig({ rideIn, isMobile, reduced, onError }) {
     const route = readHowRoute();
     if (route && route.circles.length > 1) {
       const { width: w, height: h } = state.size;
+      const halfLen = (e.howSize * w) / 2;
       const toPose = (pt, dir) => ({
         nx: (pt.x / w) * 2 - 1,
-        ny: 1 - (2 * pt.y) / h, // wheels sit on the route line through the circle centres
+        ny: 1 - (2 * groundAt(route, pt.x, halfLen, pt.y)) / h, // tyres just above the line / step circle
         size: e.howSize,
         rotY: dir > 0 ? HEADING.right : HEADING.left,
       });
@@ -103,10 +103,11 @@ function StageRig({ rideIn, isMobile, reduced, onError }) {
         startPose: toPose(c[0], 1),
         endPose: toPose(c[c.length - 1], lastDir),
         routePose: toPose(at, at.dir),
+        // lowest ny the scooter may have at screen x (its tyres stay above the line)
+        floorNy: (x, size) => 1 - (2 * groundAt(route, x, (size * w) / 2)) / h,
       };
     }
-    const pass = readLogoPass(state.size.width, state.size.height, e.heroPose);
-    poseForScroll(e.target, e.poses, e.heroPose, state.size.height, how, pass);
+    poseForScroll(e.target, e.poses, e.heroPose, state.size.height, how);
     if (!e.shown || reduced) e.shown = { ...e.target };
     else {
       // scrubbed feel: ease toward the scroll target (~0.8 s catch-up)
@@ -116,6 +117,11 @@ function StageRig({ rideIn, isMobile, reduced, onError }) {
       if (window.scrollY < 4) e.shown.nx = e.target.nx;
       // parked on step 4 and scrolled away (or a menu jump past it): don't fly across the screen
       if (Math.abs(e.target.ny) > 1.3) e.shown = { ...e.target };
+    }
+    // Never below the "How it works" line, even mid-scroll while the eased pose catches up.
+    if (how) {
+      const floor = how.floorNy(((e.shown.nx + 1) / 2) * state.size.width, e.shown.size);
+      if (e.shown.ny < floor) e.shown.ny = floor;
     }
     e.shown.spin = e.target.spin || 0;
     e.shown.air = e.target.air || 0;

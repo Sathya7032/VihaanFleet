@@ -1,8 +1,31 @@
-const DAILY_RENT = 299;
+import { useEffect, useRef } from 'react';
+import { posesFor } from '../../three/stagePoses';
+import { scooterBox } from '../../three/scooterBox';
+
+export const DAILY_RENT = 299;
+const STATS_GAP = 28; // px between the scooter's tyres and the stats
 
 export default function PricingSection() {
+  const ref = useRef(null);
+
+  // Line the stats up under the scooter parked on this section (it is fixed to the viewport).
+  useEffect(() => {
+    const el = ref.current;
+    const layout = () => {
+      const w = document.documentElement.clientWidth;
+      const h = window.innerHeight;
+      const box = scooterBox(posesFor(w, h).pricing, w, h);
+      el.style.setProperty('--ps-top', `${box.top + box.height + STATS_GAP}px`);
+      el.style.setProperty('--ps-left', `${box.left}px`);
+      el.style.setProperty('--ps-w', `${box.width}px`);
+    };
+    layout();
+    window.addEventListener('resize', layout);
+    return () => window.removeEventListener('resize', layout);
+  }, []);
+
   return (
-    <section id="pricing" className="panel panel-right">
+    <section id="pricing" className="panel panel-right" ref={ref}>
       <div className="panel-body">
         <p className="eyebrow">Rental plan &amp; pricing</p>
         <h2>
@@ -27,6 +50,10 @@ export default function PricingSection() {
             Enquire now
           </a>
         </div>
+      </div>
+
+      {/* spans the section; the stats stick just under the parked scooter while it is here */}
+      <div className="price-stats-rail">
         <div className="stats">
           <div>
             <strong data-count="6">6</strong>

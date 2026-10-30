@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { POSES } from '../../three/stagePoses';
+import { SERVICES_TURN_SHIFT, posesFor } from '../../three/stagePoses';
 import { scooterBox } from '../../three/scooterBox';
 
 const SERVICES = [
@@ -78,9 +78,9 @@ function pinProgress(el) {
 }
 
 /**
- * "What we do": pinned while you scroll; each scroll step highlights the next
- * service on the left and shows its details in a panel beside the scooter,
- * sized and placed to match the scooter's on-screen box.
+ * "What we do": pinned while you scroll; each scroll step shows the next
+ * service in a panel beside the scooter, sized and placed to match the
+ * scooter's on-screen box.
  */
 export default function ServicesSection() {
   const ref = useRef(null);
@@ -89,21 +89,28 @@ export default function ServicesSection() {
   useEffect(() => {
     const el = ref.current;
     let raf = 0;
+    let turnPx = 0;
     const layout = () => {
       const w = document.documentElement.clientWidth;
       const h = window.innerHeight;
-      const pose = w <= 860 ? POSES.mobile.services : POSES.desktop.services;
+      const pose = posesFor(w, h).services;
       const box = scooterBox(pose, w, h);
+      // At full turn the scooter slides right and its front draws in by about as much again;
+      // the panel follows so the connector still meets it (desktop only: on mobile it sits above).
+      turnPx = w > 860 ? SERVICES_TURN_SHIFT * pose.size * w : 0;
       el.style.setProperty('--sc-left', `${box.left}px`);
       el.style.setProperty('--sc-top', `${box.top}px`);
       el.style.setProperty('--sc-h', `${box.height}px`);
     };
     const update = () => {
       raf = 0;
-      const f = pinProgress(el) * SERVICES.length;
+      // detail panel slides in as the scooter arrives
+      el.classList.toggle('is-in', el.getBoundingClientRect().top < window.innerHeight * 0.45);
+      const p = pinProgress(el);
+      const f = p * SERVICES.length;
       const i = Math.min(SERVICES.length - 1, Math.floor(f));
-      el.style.setProperty('--p', String(f / SERVICES.length));
       el.style.setProperty('--step-p', String(f - i));
+      el.style.setProperty('--turn-x', `${Math.abs(Math.sin(p * Math.PI * 2)) * turnPx}px`);
       setActive(i);
     };
     const onScroll = () => {
@@ -124,14 +131,6 @@ export default function ServicesSection() {
     };
   }, []);
 
-  // Jump to the middle of a step's scroll range.
-  const goTo = (i) => {
-    const el = ref.current;
-    const span = el.offsetHeight - window.innerHeight;
-    const top = el.getBoundingClientRect().top + window.scrollY + ((i + 0.5) / SERVICES.length) * span;
-    window.scrollTo({ top, behavior: 'smooth' });
-  };
-
   return (
     <section id="services" className="services" ref={ref} style={{ '--steps': SERVICES.length }}>
       <div className="svc-pin">
@@ -144,16 +143,6 @@ export default function ServicesSection() {
             We own and manage the fleet. You ride, earn and pay a simple daily rent. Every bike comes serviced,
             insured and document-ready.
           </p>
-          <ol className="svc-list">
-            {SERVICES.map((s, i) => (
-              <li key={s.title} className={i === active ? 'is-active' : i < active ? 'is-past' : undefined}>
-                <button type="button" onClick={() => goTo(i)} aria-current={i === active ? 'step' : undefined}>
-                  <span className="svc-list-num">{pad(i + 1)}</span>
-                  {s.title}
-                </button>
-              </li>
-            ))}
-          </ol>
         </div>
 
         <div className="svc-panel" aria-live="polite">
