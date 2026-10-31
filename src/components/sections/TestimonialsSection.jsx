@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { TESTIMONIALS, TESTIMONIALS_ARE_SAMPLES } from '../../content/testimonials';
 
-const AUTOPLAY_MS = 7000;
+const AUTOPLAY_MS = 3000; // one rider-to-rider leg; also how long each story shows
 const SWIPE_PX = 80;
 
 const initials = (name) =>
