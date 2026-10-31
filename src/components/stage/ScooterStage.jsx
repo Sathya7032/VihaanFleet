@@ -4,6 +4,7 @@ import { loadVespaScene } from '../../three/vespaModel';
 import { ScooterStudio, StageMotion } from '../../three/stageEngine';
 import { HEADING, HOW_SIZE, RIDE_IN_FROM_NX, RIDE_IN_HIT_AT, RIDE_IN_SECONDS, poseForScroll, posesFor } from '../../three/stagePoses';
 import { groundAt, pointOnRoute, readHowRoute } from '../../three/howRoute';
+import { getPricingPose } from '../../three/pricingLayout';
 
 const power4Out = (t) => 1 - Math.pow(1 - t, 5);
 
@@ -81,6 +82,10 @@ function StageRig({ rideIn, isMobile, reduced, onError }) {
         e.motion.hit(1);
       }
     }
+
+    // Desktop pricing pose, measured by the section so the scooter lines up with its text.
+    const pricing = getPricingPose();
+    if (pricing) e.poses.pricing = pricing;
 
     // Live "How it works" route, measured from the step circles on screen.
     let how = null;

@@ -659,10 +659,12 @@ body {
 }
 
 /* ---------------- What we do (pinned scroll steps) ----------------
-   --sc-left / --sc-top / --sc-h: the scooter's on-screen box (set from JS),
+   --sc-left / --sc-top / --sc-h: the scooter's on-screen box (set from JS).
+   Its tyre line (--sc-top + --sc-h) is the baseline the heading text and the
+   step card both end on.
    --step-p: progress through the current step. */
 .services {
-  --panel-w: clamp(220px, 20vw, 320px);
+  --panel-w: clamp(220px, 20vw, 300px); /* set from JS with --copy-w (stagePoses servicesLayout) */
   --link: 44px;
   --ease: cubic-bezier(0.22, 1, 0.36, 1);
   position: relative;
@@ -676,16 +678,15 @@ body {
 }
 .svc-copy {
   position: absolute;
-  top: 0;
-  bottom: 0;
+  top: 70px;
+  bottom: calc(100% - var(--sc-top) - var(--sc-h));
   left: max(var(--gutter), (100% - var(--container)) / 2);
-  width: min(540px, calc(var(--sc-left) - max(var(--gutter), (100% - var(--container)) / 2) - var(--panel-w) - var(--link) - 48px));
+  width: var(--copy-w, 440px);
   max-width: none;
   margin: 0;
-  padding-top: 70px;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-end;
 }
 .services h2 {
   margin-bottom: 20px;
@@ -699,7 +700,7 @@ body {
 /* detail panel beside the scooter, same height as the scooter */
 .svc-panel {
   position: absolute;
-  top: var(--sc-top);
+  bottom: calc(100% - var(--sc-top) - var(--sc-h));
   right: calc(100% - var(--sc-left) + var(--link));
   width: var(--panel-w);
   min-height: max(var(--sc-h), 250px);
@@ -717,11 +718,9 @@ body {
     inset 0 1px rgba(255, 255, 255, 0.06);
   opacity: 0;
   translate: -40px 0;
-  transform: translateX(var(--turn-x, 0px));
   transition:
     opacity 0.7s,
-    translate 0.9s var(--ease),
-    transform 0.8s var(--ease);
+    translate 0.9s var(--ease);
 }
 .services.is-in .svc-panel {
   opacity: 1;
@@ -877,6 +876,8 @@ body {
 
 @media (max-width: 860px) {
   .svc-copy {
+    top: 0;
+    bottom: auto;
     right: var(--gutter);
     width: auto;
     padding-top: 92px;
@@ -965,6 +966,17 @@ body {
   font-weight: 800;
   line-height: 1;
 }
+/* compact price card */
+.pricing .price-card {
+  padding: 28px 30px;
+}
+.pricing .price-amount {
+  margin-bottom: 16px;
+  font-size: clamp(52px, 5.6vw, 84px);
+}
+.pricing .ticks {
+  margin-bottom: 22px;
+}
 .price-amount small {
   color: var(--muted);
   -webkit-text-fill-color: var(--muted);
@@ -1005,10 +1017,32 @@ body {
   left: 6px;
   transform: rotate(45deg) scale(0.8);
 }
-/* Pricing stats ride under the parked scooter: the rail spans the section
-   from the scooter's tyre line down, and the stats stick there in the
-   viewport (the scooter is fixed) until the section scrolls away.
-   --ps-top / --ps-left / --ps-w come from the scooter's screen box (JS). */
+/* ---- Rental plan & pricing ----
+   Desktop: the section pins while the scooter is parked; the scooter's top lines
+   up with the eyebrow and the one-row stats under it end on the price card's bottom
+   edge (PricingSection measures this and sets --ps-*; the stage reads the pose).
+   Mobile: one column; the stats stick just under the scooter below the card. */
+.pricing {
+  position: relative;
+  height: 140svh;
+}
+.price-pin {
+  position: sticky;
+  top: 0;
+  height: 100svh;
+  display: flex;
+  align-items: center;
+  padding: 84px var(--gutter) 28px;
+}
+.price-copy {
+  width: min(560px, 46%);
+  margin-left: auto;
+}
+.pricing h2 {
+  margin-bottom: 20px;
+  font-size: var(--fs-h2);
+  font-weight: 800;
+}
 .price-stats-rail {
   position: absolute;
   top: var(--ps-top, 70%);
@@ -1020,14 +1054,59 @@ body {
 .price-stats-rail .stats {
   position: sticky;
   top: var(--ps-top, 70%);
+  height: var(--ps-h, auto);
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
   pointer-events: auto;
 }
+.price-stats-rail .stats div {
+  display: grid;
+  align-content: center;
+  padding: 12px 8px;
+}
+.price-stats-rail .stats strong {
+  font-size: clamp(26px, 2.4vw, 34px);
+}
+.price-stats-rail .stats span {
+  font-size: 12px;
+}
+.stats .pct::after {
+  content: '%';
+}
 @media (max-width: 860px) {
-  /* the scooter is narrow on phones: stats use the full content width under it */
+  .pricing {
+    height: auto;
+  }
+  .price-pin {
+    position: relative;
+    height: auto;
+    display: block;
+    /* room below the card where the scooter parks with the stats under it */
+    padding: 110px var(--gutter) 60svh;
+  }
+  .price-copy {
+    width: auto;
+  }
+  /* the scooter is narrow on phones: stats use the full content width under it, in one row */
   .price-stats-rail {
     left: var(--gutter);
     right: var(--gutter);
     width: auto;
+  }
+  .price-stats-rail .stats {
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-rows: none;
+    gap: 8px;
+  }
+  .price-stats-rail .stats div {
+    padding: 12px 6px;
+    border-radius: 14px;
+  }
+  .price-stats-rail .stats strong {
+    font-size: 26px;
+  }
+  .price-stats-rail .stats span {
+    font-size: 11px;
   }
 }
 .stats {

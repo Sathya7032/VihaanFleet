@@ -21,7 +21,9 @@ export const HEADING = { left: LEFT, right: RIGHT };
 
 const DESKTOP = {
   hero: { nx: 0, ny: -0.8, size: 0.21, rotY: LEFT }, // a little smaller than the other sections
-  services: { nx: 0.66, ny: -0.3, size: 0.36, rotY: LEFT + 0.22 }, // nx is fitted to the viewport in posesFor()
+  // "What we do": parked at the right edge (nx fitted in posesFor()); its tyre line is the baseline
+  // the heading text and the step card end on
+  services: { nx: 0.66, ny: -0.4, size: 0.26, rotY: LEFT + 0.22 },
   pricing: { nx: -0.55, ny: -0.22, size: 0.4, rotY: RIGHT - 0.22 },
   howStart: { nx: -0.82, ny: -0.8, size: 0.17, rotY: RIGHT },
   howEnd: { nx: 0.82, ny: -0.8, size: 0.17, rotY: RIGHT },
@@ -44,14 +46,27 @@ export const POSES = {
   },
 };
 
-const SERVICES_EDGE = 20; // px between the Services scooter and the right edge of the screen
+// "What we do" on desktop: the scooter stays parked at the right edge; the step card sits on its
+// left and the heading column fills the rest.
+const SERVICES_EDGE = 20; // px from the screen's right edge to the scooter's box
+const SERVICES_GAP = 48; // px between the heading column and the step card
+const SERVICES_LINK = 44; // px connector between the card and the scooter (CSS --link)
+const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 
-/** Pose set for the viewport (CSS px); on desktop the Services scooter is pinned to the right edge. */
+/** Desktop "What we do" layout in CSS px: where the scooter parks, and the heading column and card widths. */
+export function servicesLayout(w, h) {
+  const box = scooterBox(DESKTOP.services, w, h);
+  const copyLeft = Math.max(clamp(0.05 * w, 20, 64), (w - 1200) / 2); // matches --gutter / --container
+  const panelW = clamp(0.2 * w, 220, 300);
+  const left = w - SERVICES_EDGE - box.width;
+  const copyW = clamp(left - SERVICES_LINK - panelW - SERVICES_GAP - copyLeft, 260, 540);
+  return { copyW, panelW, nx: ((left + box.width / 2) / w) * 2 - 1 };
+}
+
+/** Pose set for the viewport (CSS px). */
 export function posesFor(w, h) {
   if (w <= 860) return POSES.mobile;
-  const s = DESKTOP.services;
-  const nx = 1 - (scooterBox(s, w, h).width + 2 * SERVICES_EDGE) / w;
-  return { ...DESKTOP, services: { ...s, nx } };
+  return { ...DESKTOP, services: { ...DESKTOP.services, nx: servicesLayout(w, h).nx } };
 }
 
 /**
@@ -63,7 +78,8 @@ export const SEGMENTS = [
   // Hero -> Services: starts with the first scroll on the hero and lands as
   // the "What we do" section pins (it glides under the glass logo strip).
   ['#services', 'hero', 'services', 'custom:fromHero'],
-  ['#pricing', 'services', 'pricing', 'top 95', 'top 35'],
+  // lands as the pricing section pins (desktop pose measured from its layout: three/pricingLayout.js)
+  ['#pricing', 'services', 'pricing', 'top 95', 'top 0'],
   // "How it works" is pinned: the scooter drives onto step 1, then rides the
   // route through steps 1 -> 4 with scroll (see howRoute.js), parks on step 4.
   ['#how', 'pricing', 'howStart', 'custom:approach'],
@@ -73,18 +89,7 @@ export const SEGMENTS = [
 ];
 
 const KEYS = ['nx', 'ny', 'size', 'rotY'];
-const SERVICES_TURN = 0.45; // how far the scooter turns each way during the pinned "What we do" steps
-// Turning shortens the scooter on screen; this nudge (per unit of size) keeps its tail near the edge.
-export const SERVICES_TURN_SHIFT = 0.2;
 
-/** 0..1 through the pinned "What we do" section. */
-function servicesProgress(vh) {
-  const el = document.getElementById('services');
-  if (!el) return 0;
-  const r = el.getBoundingClientRect();
-  const span = r.height - vh;
-  return span > 0 ? Math.min(1, Math.max(0, -r.top / span)) : 0;
-}
 const ease = (t) => (t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2);
 
 export function lerpPose(out, a, b, t) {
@@ -107,13 +112,7 @@ export function poseForScroll(out, poses, heroPose, vh, how) {
       if (!el) continue;
       const land = el.getBoundingClientRect().top + window.scrollY;
       const p = land > 0 ? Math.min(1, Math.max(0, window.scrollY / land)) : 1;
-      if (p > 0) {
-        lerpPose(out, heroPose, poses.services, ease(p));
-        // turns one way then the other while the steps play, back to rest at both ends
-        const turn = Math.sin(servicesProgress(vh) * Math.PI * 2);
-        out.rotY += turn * SERVICES_TURN * p;
-        out.nx += Math.abs(turn) * SERVICES_TURN_SHIFT * poses.services.size * p;
-      }
+      if (p > 0) lerpPose(out, heroPose, poses.services, ease(p));
       continue;
     }
     if (start === 'custom:approach') {

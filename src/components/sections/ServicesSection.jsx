@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { SERVICES_TURN_SHIFT, posesFor } from '../../three/stagePoses';
+import { posesFor, servicesLayout } from '../../three/stagePoses';
 import { scooterBox } from '../../three/scooterBox';
 
 const SERVICES = [
@@ -89,15 +89,15 @@ export default function ServicesSection() {
   useEffect(() => {
     const el = ref.current;
     let raf = 0;
-    let turnPx = 0;
     const layout = () => {
       const w = document.documentElement.clientWidth;
       const h = window.innerHeight;
-      const pose = posesFor(w, h).services;
-      const box = scooterBox(pose, w, h);
-      // At full turn the scooter slides right and its front draws in by about as much again;
-      // the panel follows so the connector still meets it (desktop only: on mobile it sits above).
-      turnPx = w > 860 ? SERVICES_TURN_SHIFT * pose.size * w : 0;
+      const box = scooterBox(posesFor(w, h).services, w, h);
+      const lay = w > 860 ? servicesLayout(w, h) : null;
+      if (lay) {
+        el.style.setProperty('--copy-w', `${lay.copyW}px`);
+        el.style.setProperty('--panel-w', `${lay.panelW}px`);
+      }
       el.style.setProperty('--sc-left', `${box.left}px`);
       el.style.setProperty('--sc-top', `${box.top}px`);
       el.style.setProperty('--sc-h', `${box.height}px`);
@@ -110,7 +110,6 @@ export default function ServicesSection() {
       const f = p * SERVICES.length;
       const i = Math.min(SERVICES.length - 1, Math.floor(f));
       el.style.setProperty('--step-p', String(f - i));
-      el.style.setProperty('--turn-x', `${Math.abs(Math.sin(p * Math.PI * 2)) * turnPx}px`);
       setActive(i);
     };
     const onScroll = () => {
