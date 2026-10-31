@@ -77,8 +77,10 @@ function MiniScooter() {
 /**
  * "Rider stories": a pack of ride tickets. The top ticket is thrown off the
  * pack (or swiped away) and tucks in at the back; a little scooter rides the
- * road below from rider to rider as the autoplay timer. Pauses on hover,
- * focus or when off screen; no motion with reduced-motion.
+ * road below from rider to rider as the autoplay timer. It keeps riding the
+ * whole time the section is on screen: after the last rider it rides off the
+ * end and comes back in from the start. Pauses only for keyboard focus or
+ * while a ticket is being dragged; no motion with reduced-motion.
  */
 export default function TestimonialsSection() {
   const n = TESTIMONIALS.length;
@@ -88,6 +90,7 @@ export default function TestimonialsSection() {
   const [announce, setAnnounce] = useState('');
   const [reduced] = useState(() => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches);
 
+  const sectionRef = useRef(null);
   const deckRef = useRef(null);
   const roadRef = useRef(null);
   const scooterRef = useRef(null);
@@ -98,6 +101,8 @@ export default function TestimonialsSection() {
       const from = live.current.active;
       const next = ((to % n) + n) % n;
       if (next === from) return;
+      // forward past the last rider: ride off the end and come back in from the start
+      if (dir > 0 && next < from && live.current.x != null) live.current.x -= 1;
       live.current.active = next;
       live.current.elapsed = 0;
       setActive(next);
@@ -111,6 +116,7 @@ export default function TestimonialsSection() {
   const throwTop = useCallback(
     (dir) => {
       const from = live.current.active;
+      if (from === n - 1 && live.current.x != null) live.current.x -= 1;
       live.current.active = (from + 1) % n;
       live.current.elapsed = 0;
       setActive(live.current.active);
@@ -131,14 +137,14 @@ export default function TestimonialsSection() {
     return () => clearTimeout(t);
   }, [anim]);
 
-  // only run the timer while the section is on screen
+  // ride whenever the section is on screen (starts as soon as it scrolls in)
   useEffect(() => {
-    const el = deckRef.current;
+    const el = sectionRef.current;
     if (!el || !('IntersectionObserver' in window)) {
       live.current.inView = true;
       return undefined;
     }
-    const io = new IntersectionObserver(([e]) => (live.current.inView = e.isIntersecting), { threshold: 0.35 });
+    const io = new IntersectionObserver(([e]) => (live.current.inView = e.isIntersecting), { threshold: 0.1 });
     io.observe(el);
     return () => io.disconnect();
   }, []);
@@ -165,6 +171,8 @@ export default function TestimonialsSection() {
       if (sc && road) {
         const v = (L.x - prev) / Math.max(dt, 1e-3);
         sc.style.setProperty('--px', `${L.x * road.clientWidth}px`);
+        // fades out at the end of the road and back in at the start
+        sc.style.opacity = String(Math.min(1, Math.max(0, Math.min(L.x, 1 - L.x) / 0.05)));
         if (Math.abs(v) > 0.004) sc.dataset.facing = v < 0 ? 'left' : 'right';
         sc.classList.toggle('is-moving', Math.abs(v) > 0.004);
       }
@@ -226,7 +234,12 @@ export default function TestimonialsSection() {
   };
 
   return (
-    <section id="testimonials" className="panel panel-center testimonials" aria-labelledby="testimonials-title">
+    <section
+      id="testimonials"
+      className="panel panel-center testimonials"
+      aria-labelledby="testimonials-title"
+      ref={sectionRef}
+    >
       <div className="panel-body">
         <p className="eyebrow">Rider stories</p>
         <h2 id="testimonials-title">
@@ -235,12 +248,9 @@ export default function TestimonialsSection() {
 
         <div
           className={`tx${paused ? ' is-paused' : ''}`}
-          onMouseEnter={() => setPaused(true)}
-          onMouseLeave={() => {
-            setPaused(false);
-            resetTilt();
-          }}
-          onFocus={() => setPaused(true)}
+          onMouseLeave={resetTilt}
+          // keyboard focus pauses; a mouse click that leaves a button focused does not
+          onFocus={(e) => e.target.matches(':focus-visible') && setPaused(true)}
           onBlur={(e) => !e.currentTarget.contains(e.relatedTarget) && setPaused(false)}
         >
           <div
